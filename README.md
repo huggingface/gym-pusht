@@ -14,6 +14,7 @@ pip install gym-pusht
 
 ```python
 import gymnasium as gym
+import gym_pusht
 
 env = gym.make("gym_pusht/PushT-v0", render_mode="human")
 observation, info = env.reset()
