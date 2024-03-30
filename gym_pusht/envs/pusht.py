@@ -27,12 +27,95 @@ def pymunk_to_shapely(body, shapes):
 
 
 class PushTEnv(gym.Env):
-    """PushT environment."""
+    """
+    ## Description
+
+    PushT environment.
+
+    The goal of the agent is to push the block to the goal zone. The agent is a circle and the block is a tee shape.
+
+    ## Action Space
+
+    The action space is continuous and consists of two values: [x, y]. The values are in the range [0, 512] and
+    represent the target position of the agent.
+
+    ## Observation Space
+
+    If `obs_type` is set to `state`, the observation space is a 5-dimensional vector representing the state of the
+    environment: [agent_x, agent_y, block_x, block_y, block_angle]. The values are in the range [0, 512] for the agent
+    and block positions and [0, 2*pi] for the block angle.
+
+    If `obs_type` is set to `pixels`, the observation space is a 96x96 RGB image of the environment.
+
+    ## Rewards
+
+    The reward is the coverage of the block in the goal zone. The reward is 1.0 if the block is fully in the goal zone.
+
+    ## Success Criteria
+
+    The environment is considered solved if the block is at least 95% in the goal zone.
+
+    ## Starting State
+
+    The agent starts at a random position and the block starts at a random position and angle.
+
+    ## Episode Termination
+
+    The episode terminates when the block is at least 95% in the goal zone.
+
+    ## Arguments
+
+    ```python
+    >>> import gymnasium as gym
+    >>> import gym_pusht
+    >>> env = gym.make("gym_pusht/PushT-v0", obs_type="state", render_mode="rgb_array")
+    >>> env
+    <TimeLimit<OrderEnforcing<PassiveEnvChecker<PushTEnv<gym_pusht/PushT-v0>>>>>
+    ```
+
+    * `obs_type`: (str) The observation type. Can be either `state` or `pixels`. Default is `state`.
+
+    * `block_cog`: (tuple) The center of gravity of the block if different from the center of mass. Default is `None`.
+
+    * `damping`: (float) The damping factor of the environment if different from 0. Default is `None`.
+
+    * `render_action`: (bool) Whether to render the action on the image. Default is `True`.
+
+    * `render_size`: (int) The size of the rendered image. Default is `96`.
+
+    * `render_mode`: (str) The rendering mode. Can be either `human` or `rgb_array`. Default is `None`.
+
+    ## Reset Arguments
+
+    Passing the option `options["reset_to_state"]` will reset the environment to a specific state.
+
+    ```python
+    >>> import gymnasium as gym
+    >>> import gym_pusht
+    >>> env = gym.make("gym_pusht/PushT-v0")
+    >>> state, _ = env.reset()
+    >>> state
+    array([ 0.4466148 ,  0.72733474, -0.23144682, -0.50042695, -0.9076272 ],
+      dtype=float32)
+    >>> state, _ = env.reset(options={"reset_to_state": [0.0, 0.0, 0.5, 0.5, 0.3]})
+    >>> state
+    array([ 0.        ,  0.        ,  0.5       ,  0.5       ,  0.3       ],
+        dtype=float32)
+
+    ```
+
+    ## Version History
+    - v0: Original version
+
+    ## References
+    - TODO
+    """
 
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
 
     def __init__(
         self,
+        obs_type="state",
         block_cog=None,
         damping=None,
         render_action=True,
@@ -40,26 +123,27 @@ class PushTEnv(gym.Env):
         render_mode=None,
     ):
         super().__init__()
-        self.dt = 0.01
-        # Local controller params.
-        self.k_p, self.k_v = 100, 20  # PD control.z
-        self.control_hz = self.metadata["render_fps"]
+        self.obs_type = obs_type
+        if self.obs_type == "state":
+            # [agent_x, agent_y, block_x, block_y, block_angle]
+            self.observation_space = spaces.Box(
+                low=np.array([0, 0, 0, 0, 0], dtype=np.float32),
+                high=np.array([512, 512, 512, 512, 2 * np.pi], dtype=np.float32),
+            )
+        elif self.obs_type == "pixels":
+            self.observation_space = spaces.Box(low=0, high=255, shape=(render_size, render_size, 3), dtype=np.uint8)
 
-        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(2,), dtype=np.float32)
-        # agent_pos, block_pos, block_angle
-        self.observation_space = spaces.Box(
-            low=np.array([0, 0, 0, 0, 0]),
-            high=np.array([512, 512, 512, 512, 2 * np.pi]),
-            dtype=np.float32,
-        )
         self.action_space = spaces.Box(low=0, high=512, shape=(2,), dtype=np.float32)
 
         # Physics
-        self.render_mode = render_mode
+        self.k_p, self.k_v = 100, 20  # PD control.z
+        self.control_hz = self.metadata["render_fps"]
+        self.dt = 0.01
         self.block_cog = block_cog
         self.damping = damping
 
         # Rendering
+        self.render_mode = render_mode
         self.render_size = render_size
         self.render_action = render_action
 
@@ -70,18 +154,16 @@ class PushTEnv(gym.Env):
         # first time.
         self.window = None
         self.clock = None
-        self.screen = None
 
-        self.space = None
         self.teleop = None
-        self.latest_action = None
+        self._last_action = None
 
         self.success_threshold = 0.95  # 95% coverage
 
     def step(self, action):
         self.n_contact_points = 0
         n_steps = int(1 / (self.dt * self.control_hz))
-        self.latest_action = action
+        self._last_action = action
         for _ in range(n_steps):
             # Step PD control
             # self.agent.velocity = self.k_p * (act - self.agent.position)    # P control works too.
@@ -102,13 +184,13 @@ class PushTEnv(gym.Env):
         goal_area = goal_geom.area
         coverage = intersection_area / goal_area
         reward = np.clip(coverage / self.success_threshold, 0.0, 1.0)
-        success = coverage > self.success_threshold
+        is_success = coverage > self.success_threshold
 
         observation = self._get_obs()
         info = self._get_info()
 
-        info["is_success"] = success
-        terminated = success
+        info["is_success"] = is_success
+        terminated = is_success
 
         return observation, reward, terminated, False, info
 
@@ -117,7 +199,7 @@ class PushTEnv(gym.Env):
         self._setup()
 
         if options is not None and options.get("reset_to_state") is not None:
-            state = self.reset_to_state
+            state = np.arary(options.get("reset_to_state"))
         else:
             state = self.np_random.uniform(low=[50, 50, 100, 100, -np.pi], high=[450, 450, 400, 400, np.pi])
         self._set_state(state)
@@ -130,19 +212,11 @@ class PushTEnv(gym.Env):
 
         return observation, info
 
-    def render(self):
-        if self.window is None and self.render_mode == "human":  # Display not initialized
-            pygame.init()
-            pygame.display.init()
-            self.window = pygame.display.set_mode((512, 512))
-
-        if self.clock is None and self.render_mode == "human":  # Clock not initialized
-            self.clock = pygame.time.Clock()
-
-        canvas = pygame.Surface((512, 512))
-        canvas.fill((255, 255, 255))
-        self.screen = canvas
-        draw_options = DrawOptions(canvas)
+    def _draw(self):
+        # Create a screen
+        screen = pygame.Surface((512, 512))
+        screen.fill((255, 255, 255))
+        draw_options = DrawOptions(screen)
 
         # Draw goal pose
         goal_body = self._get_goal_pose_body(self.goal_pose)
@@ -150,35 +224,47 @@ class PushTEnv(gym.Env):
             goal_points = [goal_body.local_to_world(v) for v in shape.get_vertices()]
             goal_points = [pymunk.pygame_util.to_pygame(point, draw_options.surface) for point in goal_points]
             goal_points += [goal_points[0]]
-            pygame.draw.polygon(canvas, self.goal_color, goal_points)
+            pygame.draw.polygon(screen, pygame.Color("LightGreen"), goal_points)
 
         # Draw agent and block
         self.space.debug_draw(draw_options)
+        return screen
 
-        if self.render_mode == "human":
-            # Copy our drawings from `canvas` to the visible window
-            self.window.blit(canvas, canvas.get_rect())
+    def _get_img(self, screen):
+        img = np.transpose(np.array(pygame.surfarray.pixels3d(screen)), axes=(1, 0, 2))
+        img = cv2.resize(img, (self.render_size, self.render_size))
+        if self.render_action and self._last_action is not None:
+            action = np.array(self._last_action)
+            coord = (action / 512 * 96).astype(np.int32)
+            marker_size = int(8 / 96 * self.render_size)
+            thickness = int(1 / 96 * self.render_size)
+            cv2.drawMarker(
+                img,
+                coord,
+                color=(255, 0, 0),
+                markerType=cv2.MARKER_CROSS,
+                markerSize=marker_size,
+                thickness=thickness,
+            )
+        return img
+
+    def render(self):
+        screen = self._draw()  # draw the environment on a screen
+
+        if self.render_mode == "rgb_array":
+            return self._get_img(screen)
+        elif self.render_mode == "human":
+            if self.window is None:
+                pygame.init()
+                pygame.display.init()
+                self.window = pygame.display.set_mode((512, 512))
+            if self.clock is None:
+                self.clock = pygame.time.Clock()
+
+            self.window.blit(screen, screen.get_rect())  # copy our drawings from `screen` to the visible window
             pygame.event.pump()
             self.clock.tick(self.metadata["render_fps"] * int(1 / (self.dt * self.control_hz)))
             pygame.display.update()
-
-        if self.render_mode == "rgb_array":
-            img = np.transpose(np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2))
-            img = cv2.resize(img, (self.render_size, self.render_size))
-            if self.render_action and self.latest_action is not None:
-                action = np.array(self.latest_action)
-                coord = (action / 512 * 96).astype(np.int32)
-                marker_size = int(8 / 96 * self.render_size)
-                thickness = int(1 / 96 * self.render_size)
-                cv2.drawMarker(
-                    img,
-                    coord,
-                    color=(255, 0, 0),
-                    markerType=cv2.MARKER_CROSS,
-                    markerSize=marker_size,
-                    thickness=thickness,
-                )
-            return img
         else:
             return None
 
@@ -201,10 +287,14 @@ class PushTEnv(gym.Env):
         return teleop_agent(act)
 
     def _get_obs(self):
-        agent_position = np.array(self.agent.position)
-        block_position = np.array(self.block.position)
-        block_angle = self.block.angle % (2 * np.pi)
-        obs = np.concatenate([agent_position, block_position, [block_angle]], dtype=np.float32)
+        if self.obs_type == "state":
+            agent_position = np.array(self.agent.position)
+            block_position = np.array(self.block.position)
+            block_angle = self.block.angle % (2 * np.pi)
+            obs = np.concatenate([agent_position, block_position, [block_angle]], dtype=np.float32)
+        elif self.obs_type == "pixels":
+            screen = self._draw()
+            obs = self._get_img(screen)
         return obs
 
     def _get_goal_pose_body(self, pose):
@@ -232,22 +322,6 @@ class PushTEnv(gym.Env):
     def _handle_collision(self, arbiter, space, data):
         self.n_contact_points += len(arbiter.contact_point_set.points)
 
-    def _set_state(self, state):
-        if isinstance(state, np.ndarray):
-            state = state.tolist()
-        pos_agent = state[:2]
-        pos_block = state[2:4]
-        rot_block = state[4]
-        self.agent.position = pos_agent
-        # Setting angle rotates with respect to center of mass, therefore will modify the geometric position if not
-        # the same as CoM. Therefore should theoritically set the angle first. But for compatibility with legacy data,
-        # we do the opposite.
-        self.block.position = pos_block
-        self.block.angle = rot_block
-
-        # Run physics to take effect
-        self.space.step(self.dt)
-
     def _setup(self):
         self.space = pymunk.Space()
         self.space.gravity = 0, 0
@@ -266,7 +340,6 @@ class PushTEnv(gym.Env):
         # Add agent, block, and goal zone
         self.agent = self._add_circle((256, 400), 15)
         self.block = self._add_tee((256, 300), 0)
-        self.goal_color = pygame.Color("LightGreen")
         self.goal_pose = np.array([256, 256, np.pi / 4])  # x, y, theta (in radians)
         if self.block_cog is not None:
             self.block.center_of_gravity = self.block_cog
@@ -275,6 +348,17 @@ class PushTEnv(gym.Env):
         self.collision_handeler = self.space.add_collision_handler(0, 0)
         self.collision_handeler.post_solve = self._handle_collision
         self.n_contact_points = 0
+
+    def _set_state(self, state):
+        self.agent.position = list(state[:2])
+        # Setting angle rotates with respect to center of mass, therefore will modify the geometric position if not
+        # the same as CoM. Therefore should theoritically set the angle first. But for compatibility with legacy data,
+        # we do the opposite.
+        self.block.position = list(state[2:4])
+        self.block.angle = state[4]
+
+        # Run physics to take effect
+        self.space.step(self.dt)
 
     def _add_segment(self, a, b, radius):
         shape = pymunk.Segment(self.space.static_body, a, b, radius)
