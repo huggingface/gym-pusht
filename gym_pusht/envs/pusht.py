@@ -89,26 +89,27 @@ class PushTEnv(gym.Env):
 
     Passing the option `options["reset_to_state"]` will reset the environment to a specific state.
 
+    > [!WARNING]  
+    > For legacy compatibility, the inner fonctionning has been preserved, and the state set is not the same as the
+    > the one passed in the argument.
+
     ```python
     >>> import gymnasium as gym
     >>> import gym_pusht
     >>> env = gym.make("gym_pusht/PushT-v0")
-    >>> state, _ = env.reset()
+    >>> state, _ = env.reset(options={"reset_to_state": [0.0, 10.0, 20.0, 30.0, 1.0]})
     >>> state
-    array([ 0.4466148 ,  0.72733474, -0.23144682, -0.50042695, -0.9076272 ],
-      dtype=float32)
-    >>> state, _ = env.reset(options={"reset_to_state": [0.0, 0.0, 0.5, 0.5, 0.3]})
-    >>> state
-    array([ 0.        ,  0.        ,  0.5       ,  0.5       ,  0.3       ],
-        dtype=float32)
-
+    array([ 0.      , 10.      , 57.866196, 50.686398,  1.      ],
+          dtype=float32)
     ```
 
     ## Version History
-    - v0: Original version
+
+    * v0: Original version
 
     ## References
-    - TODO
+
+    * TODO:
     """
 
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
@@ -199,7 +200,7 @@ class PushTEnv(gym.Env):
         self._setup()
 
         if options is not None and options.get("reset_to_state") is not None:
-            state = np.arary(options.get("reset_to_state"))
+            state = np.array(options.get("reset_to_state"))
         else:
             state = self.np_random.uniform(low=[50, 50, 100, 100, -np.pi], high=[450, 450, 400, 400, np.pi])
         self._set_state(state)
