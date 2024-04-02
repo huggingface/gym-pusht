@@ -90,7 +90,7 @@ The episode terminates when the block is at least 95% in the goal zone.
 
 Passing the option `options["reset_to_state"]` will reset the environment to a specific state.
 
-> [!WARNING]  
+> [!WARNING]
 > For legacy compatibility, the inner fonctionning has been preserved, and the state set is not the same as the
 > the one passed in the argument.
 
@@ -111,3 +111,31 @@ array([ 0.      , 10.      , 57.866196, 50.686398,  1.      ],
 ## References
 
 * TODO:
+
+
+## Contribute
+
+Instead of using `pip` directly, we use `poetry` for development purposes to easily track our dependencies.
+If you don't have it already, follow the [instructions](https://python-poetry.org/docs/#installation) to install it.
+
+Install the project with dev dependencies:
+```bash
+poetry install --with dev
+```
+
+### Add dependencies
+
+The equivalent of `pip install some-package` would just be:
+```bash
+poetry add some-package
+```
+
+### Follow our style
+
+```bash
+# install pre-commit hooks
+pre-commit install
+
+# apply style and linter checks on staged files
+pre-commit
+```
