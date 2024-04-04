@@ -16,12 +16,13 @@ pip install gym-pusht
 import gymnasium as gym
 import gym_pusht
 
-env = gym.make("gym_pusht/PushT-v0", render_mode="human")
+env = gym.make("gym_pusht/PushT-v0", render_mode="human", render_size=(84,84), visualization_size=(680,680))
 observation, info = env.reset()
 
 for _ in range(1000):
     action = env.action_space.sample()
     observation, reward, terminated, truncated, info = env.step(action)
+    image = env.render()
 
     if terminated or truncated:
         observation, info = env.reset()
