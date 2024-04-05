@@ -91,7 +91,7 @@ class PushTEnv(gym.Env):
 
     Passing the option `options["reset_to_state"]` will reset the environment to a specific state.
 
-    > [!WARNING]  
+    > [!WARNING]
     > For legacy compatibility, the inner fonctionning has been preserved, and the state set is not the same as the
     > the one passed in the argument.
 
@@ -114,8 +114,7 @@ class PushTEnv(gym.Env):
     * TODO:
     """
 
-    metadata = {"render_modes": [],
-        "render_fps": 10}
+    metadata = {"render_modes": [], "render_fps": 10}
 
     def __init__(
         self,
@@ -145,16 +144,25 @@ class PushTEnv(gym.Env):
                 dtype=np.float64,
             )
         elif self.obs_type == "pixels":
-            self.observation_space = spaces.Box(low=0, high=255, shape=(self.observation_height, self.observation_width, 3), dtype=np.uint8)
+            self.observation_space = spaces.Box(
+                low=0, high=255, shape=(self.observation_height, self.observation_width, 3), dtype=np.uint8
+            )
         elif self.obs_type == "pixels_agent_pos":
-            self.observation_space = spaces.Dict({
-                "pixels": spaces.Box(low=0, high=255, shape=(self.observation_height, self.observation_width, 3), dtype=np.uint8),
-                "agent_pos": spaces.Box(
-                    low=np.array([0, 0]),
-                    high=np.array([512, 512]),
-                    dtype=np.float64,
-                ),
-            })
+            self.observation_space = spaces.Dict(
+                {
+                    "pixels": spaces.Box(
+                        low=0,
+                        high=255,
+                        shape=(self.observation_height, self.observation_width, 3),
+                        dtype=np.uint8,
+                    ),
+                    "agent_pos": spaces.Box(
+                        low=np.array([0, 0]),
+                        high=np.array([512, 512]),
+                        dtype=np.float64,
+                    ),
+                }
+            )
 
         self.action_space = spaces.Box(low=0, high=512, shape=(2,), dtype=np.float32)
 
@@ -185,7 +193,9 @@ class PushTEnv(gym.Env):
         for _ in range(n_steps):
             # Step PD control
             # self.agent.velocity = self.k_p * (act - self.agent.position)    # P control works too.
-            acceleration = self.k_p * (action - self.agent.position) + self.k_v * (Vec2d(0, 0) - self.agent.velocity)
+            acceleration = self.k_p * (action - self.agent.position) + self.k_v * (
+                Vec2d(0, 0) - self.agent.velocity
+            )
             self.agent.velocity += acceleration * self.dt
 
             # Step physics
@@ -216,7 +226,7 @@ class PushTEnv(gym.Env):
         if options is not None and options.get("reset_to_state") is not None:
             state = np.array(options.get("reset_to_state"))
         else:
-            #state = self.np_random.uniform(low=[50, 50, 100, 100, -np.pi], high=[450, 450, 400, 400, np.pi])
+            # state = self.np_random.uniform(low=[50, 50, 100, 100, -np.pi], high=[450, 450, 400, 400, np.pi])
             rs = np.random.RandomState(seed=seed)
             state = np.array(
                 [
@@ -281,7 +291,9 @@ class PushTEnv(gym.Env):
         if mode == "rgb_array":
             return self._get_img(screen, width=self.observation_width, height=self.observation_height)
         elif mode == "visualize":
-            return self._get_img(screen, width=self.visualization_width, height=self.visualization_height, render_action=True)
+            return self._get_img(
+                screen, width=self.visualization_width, height=self.visualization_height, render_action=True
+            )
         elif mode == "human":
             if self.window is None:
                 pygame.init()
@@ -290,7 +302,9 @@ class PushTEnv(gym.Env):
             if self.clock is None:
                 self.clock = pygame.time.Clock()
 
-            self.window.blit(screen, screen.get_rect())  # copy our drawings from `screen` to the visible window
+            self.window.blit(
+                screen, screen.get_rect()
+            )  # copy our drawings from `screen` to the visible window
             pygame.event.pump()
             self.clock.tick(self.metadata["render_fps"] * int(1 / (self.dt * self.control_hz)))
             pygame.display.update()
