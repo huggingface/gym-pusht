@@ -79,11 +79,13 @@ class PushTEnv(gym.Env):
 
     * `damping`: (float) The damping factor of the environment if different from 0. Default is `None`.
 
-    * `render_action`: (bool) Whether to render the action on the image. Default is `True`.
+    * `observation_width`: (int) The width of the observed image. Default is `96`.
 
-    * `render_size`: (int) The size of the rendered image. Default is `96`.
+    * `observation_height`: (int) The height of the observed image. Default is `96`.
 
-    * `render_mode`: (str) The rendering mode. Can be either `human` or `rgb_array`. Default is `None`.
+    * `visualization_width`: (int) The width of the visualized image. Default is `680`.
+
+    * `visualization_height`: (int) The height of the visualized image. Default is `680`.
 
     ## Reset Arguments
 
@@ -112,19 +114,29 @@ class PushTEnv(gym.Env):
     * TODO:
     """
 
-    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
+    metadata = {"render_modes": [],
+        "render_fps": 10}
 
     def __init__(
         self,
         obs_type="state",
         block_cog=None,
         damping=None,
-        render_action=True,
-        render_size=96,
-        render_mode=None,
+        observation_width=96,
+        observation_height=96,
+        visualization_width=680,
+        visualization_height=680,
     ):
         super().__init__()
+        # Observations
         self.obs_type = obs_type
+
+        # Rendering
+        self.observation_width = observation_width
+        self.observation_height = observation_height
+        self.visualization_width = visualization_width
+        self.visualization_height = visualization_height
+
         if self.obs_type == "state":
             # [agent_x, agent_y, block_x, block_y, block_angle]
             self.observation_space = spaces.Box(
@@ -133,10 +145,10 @@ class PushTEnv(gym.Env):
                 dtype=np.float64,
             )
         elif self.obs_type == "pixels":
-            self.observation_space = spaces.Box(low=0, high=255, shape=(render_size, render_size, 3), dtype=np.uint8)
+            self.observation_space = spaces.Box(low=0, high=255, shape=(self.observation_height, self.observation_width, 3), dtype=np.uint8)
         elif self.obs_type == "pixels_agent_pos":
             self.observation_space = spaces.Dict({
-                "pixels": spaces.Box(low=0, high=255, shape=(render_size, render_size, 3), dtype=np.uint8),
+                "pixels": spaces.Box(low=0, high=255, shape=(self.observation_height, self.observation_width, 3), dtype=np.uint8),
                 "agent_pos": spaces.Box(
                     low=np.array([0, 0]),
                     high=np.array([512, 512]),
@@ -152,11 +164,6 @@ class PushTEnv(gym.Env):
         self.dt = 0.01
         self.block_cog = block_cog
         self.damping = damping
-
-        # Rendering
-        self.render_mode = render_mode
-        self.render_size = render_size
-        self.render_action = render_action
 
         # If human-rendering is used, `self.window` will be a reference
         # to the window that we draw to. `self.clock` will be a clock that is used
@@ -183,9 +190,6 @@ class PushTEnv(gym.Env):
 
             # Step physics
             self.space.step(self.dt)
-
-            if self.render_mode == "human":
-                self.render()
 
         # Compute reward
         goal_body = self._get_goal_pose_body(self.goal_pose)
@@ -252,14 +256,15 @@ class PushTEnv(gym.Env):
         self.space.debug_draw(draw_options)
         return screen
 
-    def _get_img(self, screen):
+    def _get_img(self, screen, width, height, render_action=False):
         img = np.transpose(np.array(pygame.surfarray.pixels3d(screen)), axes=(1, 0, 2))
-        img = cv2.resize(img, (self.render_size, self.render_size))
-        if self.render_action and self._last_action is not None:
+        img = cv2.resize(img, (width, height))
+        render_size = min(width, height)
+        if render_action and self._last_action is not None:
             action = np.array(self._last_action)
             coord = (action / 512 * 96).astype(np.int32)
-            marker_size = int(8 / 96 * self.render_size)
-            thickness = int(1 / 96 * self.render_size)
+            marker_size = int(8 / 96 * render_size)
+            thickness = int(1 / 96 * render_size)
             cv2.drawMarker(
                 img,
                 coord,
@@ -270,12 +275,14 @@ class PushTEnv(gym.Env):
             )
         return img
 
-    def render(self):
+    def render(self, mode="rgb_array"):
         screen = self._draw()  # draw the environment on a screen
 
-        if self.render_mode == "rgb_array":
-            return self._get_img(screen)
-        elif self.render_mode == "human":
+        if mode == "rgb_array":
+            return self._get_img(screen, width=self.observation_width, height=self.observation_height)
+        elif mode == "visualize":
+            return self._get_img(screen, width=self.visualization_width, height=self.visualization_height, render_action=True)
+        elif mode == "human":
             if self.window is None:
                 pygame.init()
                 pygame.display.init()
@@ -288,7 +295,7 @@ class PushTEnv(gym.Env):
             self.clock.tick(self.metadata["render_fps"] * int(1 / (self.dt * self.control_hz)))
             pygame.display.update()
         else:
-            return None
+            raise ValueError(mode)
 
     def close(self):
         if self.window is not None:
@@ -315,12 +322,10 @@ class PushTEnv(gym.Env):
             block_angle = self.block.angle % (2 * np.pi)
             obs = np.concatenate([agent_position, block_position, [block_angle]], dtype=np.float32)
         elif self.obs_type == "pixels":
-            screen = self._draw()
-            obs = self._get_img(screen)
+            obs = self.render()
         elif self.obs_type == "pixels_agent_pos":
-            screen = self._draw()
             obs = {
-                "pixels": self._get_img(screen),
+                "pixels": self.render(),
                 "agent_pos": np.array(self.agent.position),
             }
         return obs
