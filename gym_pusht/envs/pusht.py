@@ -128,8 +128,9 @@ class PushTEnv(gym.Env):
         if self.obs_type == "state":
             # [agent_x, agent_y, block_x, block_y, block_angle]
             self.observation_space = spaces.Box(
-                low=np.array([0, 0, 0, 0, 0], dtype=np.float64),
-                high=np.array([512, 512, 512, 512, 2 * np.pi], dtype=np.float64),
+                low=np.array([0, 0, 0, 0, 0]),
+                high=np.array([512, 512, 512, 512, 2 * np.pi]),
+                dtype=np.float64,
             )
         elif self.obs_type == "pixels":
             self.observation_space = spaces.Box(low=0, high=255, shape=(render_size, render_size, 3), dtype=np.uint8)
@@ -137,8 +138,9 @@ class PushTEnv(gym.Env):
             self.observation_space = spaces.Dict({
                 "pixels": spaces.Box(low=0, high=255, shape=(render_size, render_size, 3), dtype=np.uint8),
                 "agent_pos": spaces.Box(
-                    low=np.array([0, 0], dtype=np.float64),
-                    high=np.array([512, 512], dtype=np.float64),
+                    low=np.array([0, 0]),
+                    high=np.array([512, 512]),
+                    dtype=np.float64,
                 ),
             })
 
