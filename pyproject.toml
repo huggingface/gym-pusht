@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "gym-pusht"
 version = "0.1.0"
-description = "PushT environment for LeRobot"
+description = "A gymnasium environment for PushT."
 authors = [
     "Rémi Cadène <re.cadene@gmail.com>",
     "Quentin Gallouédec <quentin.gallouedec@ec-lyon.fr>",
