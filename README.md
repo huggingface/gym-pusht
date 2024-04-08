@@ -7,6 +7,12 @@ A gymnasium environment PushT.
 
 ## Installation
 
+Create a virtual environment with Python 3.10 and activate it, e.g. with [`miniconda`](https://docs.anaconda.com/free/miniconda/index.html):
+```bash
+conda create -y -n pusht python=3.10 && conda activate pusht
+```
+
+Install gym-pusht:
 ```bash
 pip install gym-pusht
 ```
@@ -39,12 +45,12 @@ PushT environment.
 
 The goal of the agent is to push the block to the goal zone. The agent is a circle and the block is a tee shape.
 
-## Action Space
+### Action Space
 
 The action space is continuous and consists of two values: [x, y]. The values are in the range [0, 512] and
 represent the target position of the agent.
 
-## Observation Space
+### Observation Space
 
 If `obs_type` is set to `state`, the observation space is a 5-dimensional vector representing the state of the
 environment: [agent_x, agent_y, block_x, block_y, block_angle]. The values are in the range [0, 512] for the agent
@@ -52,23 +58,23 @@ and block positions and [0, 2*pi] for the block angle.
 
 If `obs_type` is set to `pixels`, the observation space is a 96x96 RGB image of the environment.
 
-## Rewards
+### Rewards
 
 The reward is the coverage of the block in the goal zone. The reward is 1.0 if the block is fully in the goal zone.
 
-## Success Criteria
+### Success Criteria
 
 The environment is considered solved if the block is at least 95% in the goal zone.
 
-## Starting State
+### Starting State
 
 The agent starts at a random position and the block starts at a random position and angle.
 
-## Episode Termination
+### Episode Termination
 
 The episode terminates when the block is at least 95% in the goal zone.
 
-## Arguments
+### Arguments
 
 ```python
 >>> import gymnasium as gym
@@ -90,7 +96,7 @@ The episode terminates when the block is at least 95% in the goal zone.
 
 * `render_mode`: (str) The rendering mode. Can be either `human` or `rgb_array`. Default is `None`.
 
-## Reset Arguments
+### Reset Arguments
 
 Passing the option `options["reset_to_state"]` will reset the environment to a specific state.
 
@@ -108,9 +114,11 @@ array([ 0.      , 10.      , 57.866196, 50.686398,  1.      ],
         dtype=float32)
 ```
 
+
 ## Version History
 
 * v0: Original version
+
 
 ## References
 
@@ -143,3 +151,7 @@ pre-commit install
 # apply style and linter checks on staged files
 pre-commit
 ```
+
+## Acknowledgment
+
+gym-pusht is adapted from [Diffusion Policy](https://diffusion-policy.cs.columbia.edu/)
