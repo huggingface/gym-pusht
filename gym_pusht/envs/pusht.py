@@ -114,11 +114,12 @@ class PushTEnv(gym.Env):
     * TODO:
     """
 
-    metadata = {"render_modes": [], "render_fps": 10}
+    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
 
     def __init__(
         self,
         obs_type="state",
+        render_mode="rgb_array",
         block_cog=None,
         damping=None,
         observation_width=96,
@@ -131,11 +132,37 @@ class PushTEnv(gym.Env):
         self.obs_type = obs_type
 
         # Rendering
+        self.render_mode = render_mode
         self.observation_width = observation_width
         self.observation_height = observation_height
         self.visualization_width = visualization_width
         self.visualization_height = visualization_height
 
+        # Initialize spaces
+        self._initialize_observation_space()
+        self.action_space = spaces.Box(low=0, high=512, shape=(2,), dtype=np.float32)
+
+        # Physics
+        self.k_p, self.k_v = 100, 20  # PD control.z
+        self.control_hz = self.metadata["render_fps"]
+        self.dt = 0.01
+        self.block_cog = block_cog
+        self.damping = damping
+
+        # If human-rendering is used, `self.window` will be a reference
+        # to the window that we draw to. `self.clock` will be a clock that is used
+        # to ensure that the environment is rendered at the correct framerate in
+        # human-mode. They will remain `None` until human-mode is used for the
+        # first time.
+        self.window = None
+        self.clock = None
+
+        self.teleop = None
+        self._last_action = None
+
+        self.success_threshold = 0.95  # 95% coverage
+
+    def _initialize_observation_space(self):
         if self.obs_type == "state":
             # [agent_x, agent_y, block_x, block_y, block_angle]
             self.observation_space = spaces.Box(
@@ -163,28 +190,18 @@ class PushTEnv(gym.Env):
                     ),
                 }
             )
+        else:
+            raise ValueError(
+                f"Unknown obs_type {self.obs_type}. Must be one of [pixels, state, pixels_agent_pos]"
+            )
 
-        self.action_space = spaces.Box(low=0, high=512, shape=(2,), dtype=np.float32)
-
-        # Physics
-        self.k_p, self.k_v = 100, 20  # PD control.z
-        self.control_hz = self.metadata["render_fps"]
-        self.dt = 0.01
-        self.block_cog = block_cog
-        self.damping = damping
-
-        # If human-rendering is used, `self.window` will be a reference
-        # to the window that we draw to. `self.clock` will be a clock that is used
-        # to ensure that the environment is rendered at the correct framerate in
-        # human-mode. They will remain `None` until human-mode is used for the
-        # first time.
-        self.window = None
-        self.clock = None
-
-        self.teleop = None
-        self._last_action = None
-
-        self.success_threshold = 0.95  # 95% coverage
+    def _get_coverage(self):
+        goal_body = self._get_goal_pose_body(self.goal_pose)
+        goal_geom = pymunk_to_shapely(goal_body, self.block.shapes)
+        block_geom = pymunk_to_shapely(self.block, self.block.shapes)
+        intersection_area = goal_geom.intersection(block_geom).area
+        goal_area = goal_geom.area
+        return intersection_area / goal_area
 
     def step(self, action):
         self.n_contact_points = 0
@@ -202,17 +219,11 @@ class PushTEnv(gym.Env):
             self.space.step(self.dt)
 
         # Compute reward
-        goal_body = self._get_goal_pose_body(self.goal_pose)
-        goal_geom = pymunk_to_shapely(goal_body, self.block.shapes)
-        block_geom = pymunk_to_shapely(self.block, self.block.shapes)
-        intersection_area = goal_geom.intersection(block_geom).area
-        goal_area = goal_geom.area
-        coverage = intersection_area / goal_area
+        coverage = self._get_coverage()
         reward = np.clip(coverage / self.success_threshold, 0.0, 1.0)
-        is_success = coverage > self.success_threshold
-        terminated = is_success
+        terminated = is_success = coverage > self.success_threshold
 
-        observation = self._get_obs()
+        observation = self.get_obs()
         info = self._get_info()
         info["is_success"] = is_success
 
@@ -235,11 +246,12 @@ class PushTEnv(gym.Env):
                     rs.randint(100, 400),
                     rs.randint(100, 400),
                     rs.randn() * 2 * np.pi - np.pi,
-                ]
+                ],
+                # dtype=np.float64
             )
         self._set_state(state)
 
-        observation = self._get_obs()
+        observation = self.get_obs()
         info = self._get_info()
         info["is_success"] = False
 
@@ -285,16 +297,20 @@ class PushTEnv(gym.Env):
             )
         return img
 
-    def render(self, mode="rgb_array"):
+    def render(self):
+        return self._render(visualize=True)
+
+    def _render(self, visualize=False):
+        width, height = (
+            (self.visualization_width, self.visualization_height)
+            if visualize
+            else (self.observation_width, self.observation_height)
+        )
         screen = self._draw()  # draw the environment on a screen
 
-        if mode == "rgb_array":
-            return self._get_img(screen, width=self.observation_width, height=self.observation_height)
-        elif mode == "visualize":
-            return self._get_img(
-                screen, width=self.visualization_width, height=self.visualization_height, render_action=True
-            )
-        elif mode == "human":
+        if self.render_mode == "rgb_array":
+            return self._get_img(screen, width=width, height=height, render_action=visualize)
+        elif self.render_mode == "human":
             if self.window is None:
                 pygame.init()
                 pygame.display.init()
@@ -309,7 +325,7 @@ class PushTEnv(gym.Env):
             self.clock.tick(self.metadata["render_fps"] * int(1 / (self.dt * self.control_hz)))
             pygame.display.update()
         else:
-            raise ValueError(mode)
+            raise ValueError(self.render_mode)
 
     def close(self):
         if self.window is not None:
@@ -329,20 +345,21 @@ class PushTEnv(gym.Env):
 
         return teleop_agent(act)
 
-    def _get_obs(self):
+    def get_obs(self):
         if self.obs_type == "state":
             agent_position = np.array(self.agent.position)
             block_position = np.array(self.block.position)
             block_angle = self.block.angle % (2 * np.pi)
-            obs = np.concatenate([agent_position, block_position, [block_angle]], dtype=np.float32)
-        elif self.obs_type == "pixels":
-            obs = self.render()
+            return np.concatenate([agent_position, block_position, [block_angle]], dtype=np.float64)
+
+        pixels = self._render()
+        if self.obs_type == "pixels":
+            return pixels
         elif self.obs_type == "pixels_agent_pos":
-            obs = {
-                "pixels": self.render(),
+            return {
+                "pixels": pixels,
                 "agent_pos": np.array(self.agent.position),
             }
-        return obs
 
     def _get_goal_pose_body(self, pose):
         mass = 1
