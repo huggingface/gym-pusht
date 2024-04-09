@@ -114,7 +114,8 @@ class PushTEnv(gym.Env):
     * TODO:
     """
 
-    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
+    # metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
+    metadata = {"render_modes": ["rgb_array"], "render_fps": 10}
 
     def __init__(
         self,
@@ -330,7 +331,7 @@ class PushTEnv(gym.Env):
     def close(self):
         if self.window is not None:
             pygame.display.quit()
-            pygame.quit()
+        pygame.quit()
 
     def teleop_agent(self):
         teleop_agent = collections.namedtuple("TeleopAgent", ["act"])
