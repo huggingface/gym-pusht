@@ -335,7 +335,7 @@ class PushTEnv(gym.Env):
     def close(self):
         if self.window is not None:
             pygame.display.quit()
-        pygame.quit()
+            pygame.quit()
 
     def teleop_agent(self):
         teleop_agent = collections.namedtuple("TeleopAgent", ["act"])
