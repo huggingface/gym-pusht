@@ -1,4 +1,5 @@
 import collections
+import os
 
 import cv2
 import gymnasium as gym
@@ -11,6 +12,10 @@ from gymnasium import spaces
 from pymunk.vec2d import Vec2d
 
 from .pymunk_override import DrawOptions
+
+RENDER_MODES = ["rgb_array"]
+if os.environ.get("MUJOCO_GL") != "egl":
+    RENDER_MODES.append("human")
 
 
 def pymunk_to_shapely(body, shapes):
@@ -114,8 +119,7 @@ class PushTEnv(gym.Env):
     * TODO:
     """
 
-    # metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
-    metadata = {"render_modes": ["rgb_array"], "render_fps": 10}
+    metadata = {"render_modes": RENDER_MODES, "render_fps": 10}
 
     def __init__(
         self,
