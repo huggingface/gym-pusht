@@ -432,6 +432,7 @@ class PushTEnv(gym.Env):
 
     @staticmethod
     def add_segment(space, a, b, radius):
+        # TODO(rcadene): rename add_segment to make_segment, since it is not added to the space
         shape = pymunk.Segment(space.static_body, a, b, radius)
         shape.color = pygame.Color("LightGray")  # https://htmlcolorcodes.com/color-names
         return shape
