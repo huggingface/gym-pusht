@@ -201,7 +201,7 @@ class PushTEnv(gym.Env):
             )
 
     def _get_coverage(self):
-        goal_body = self._get_goal_pose_body(self.goal_pose)
+        goal_body = self.get_goal_pose_body(self.goal_pose)
         goal_geom = pymunk_to_shapely(goal_body, self.block.shapes)
         block_geom = pymunk_to_shapely(self.block, self.block.shapes)
         intersection_area = goal_geom.intersection(block_geom).area
@@ -272,7 +272,7 @@ class PushTEnv(gym.Env):
         draw_options = DrawOptions(screen)
 
         # Draw goal pose
-        goal_body = self._get_goal_pose_body(self.goal_pose)
+        goal_body = self.get_goal_pose_body(self.goal_pose)
         for shape in self.block.shapes:
             goal_points = [goal_body.local_to_world(v) for v in shape.get_vertices()]
             goal_points = [pymunk.pygame_util.to_pygame(point, draw_options.surface) for point in goal_points]
@@ -366,7 +366,8 @@ class PushTEnv(gym.Env):
                 "agent_pos": np.array(self.agent.position),
             }
 
-    def _get_goal_pose_body(self, pose):
+    @staticmethod
+    def get_goal_pose_body(pose):
         mass = 1
         inertia = pymunk.moment_for_box(mass, (50, 100))
         body = pymunk.Body(mass, inertia)
@@ -399,16 +400,16 @@ class PushTEnv(gym.Env):
 
         # Add walls
         walls = [
-            self._add_segment((5, 506), (5, 5), 2),
-            self._add_segment((5, 5), (506, 5), 2),
-            self._add_segment((506, 5), (506, 506), 2),
-            self._add_segment((5, 506), (506, 506), 2),
+            self.add_segment(self.space, (5, 506), (5, 5), 2),
+            self.add_segment(self.space, (5, 5), (506, 5), 2),
+            self.add_segment(self.space, (506, 5), (506, 506), 2),
+            self.add_segment(self.space, (5, 506), (506, 506), 2),
         ]
         self.space.add(*walls)
 
         # Add agent, block, and goal zone
-        self.agent = self._add_circle((256, 400), 15)
-        self.block = self._add_tee((256, 300), 0)
+        self.agent = self.add_circle(self.space, (256, 400), 15)
+        self.block = self.add_tee(self.space, (256, 300), 0)
         self.goal_pose = np.array([256, 256, np.pi / 4])  # x, y, theta (in radians)
         if self.block_cog is not None:
             self.block.center_of_gravity = self.block_cog
@@ -429,21 +430,25 @@ class PushTEnv(gym.Env):
         # Run physics to take effect
         self.space.step(self.dt)
 
-    def _add_segment(self, a, b, radius):
-        shape = pymunk.Segment(self.space.static_body, a, b, radius)
+    @staticmethod
+    def add_segment(space, a, b, radius):
+        # TODO(rcadene): rename add_segment to make_segment, since it is not added to the space
+        shape = pymunk.Segment(space.static_body, a, b, radius)
         shape.color = pygame.Color("LightGray")  # https://htmlcolorcodes.com/color-names
         return shape
 
-    def _add_circle(self, position, radius):
+    @staticmethod
+    def add_circle(space, position, radius):
         body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
         body.position = position
         body.friction = 1
         shape = pymunk.Circle(body, radius)
         shape.color = pygame.Color("RoyalBlue")
-        self.space.add(body, shape)
+        space.add(body, shape)
         return body
 
-    def _add_tee(self, position, angle, scale=30, color="LightSlateGray", mask=None):
+    @staticmethod
+    def add_tee(space, position, angle, scale=30, color="LightSlateGray", mask=None):
         if mask is None:
             mask = pymunk.ShapeFilter.ALL_MASKS()
         mass = 1
@@ -473,5 +478,5 @@ class PushTEnv(gym.Env):
         body.position = position
         body.angle = angle
         body.friction = 1
-        self.space.add(body, shape1, shape2)
+        space.add(body, shape1, shape2)
         return body
