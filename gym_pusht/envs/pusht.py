@@ -1,10 +1,16 @@
 import collections
 import os
+import warnings
 
 import cv2
 import gymnasium as gym
 import numpy as np
-import pygame
+
+with warnings.catch_warnings():
+    # Filter out DeprecationWarnings raised from pkg_resources
+    warnings.filterwarnings("ignore", "pkg_resources is deprecated as an API", category=DeprecationWarning)
+    import pygame
+
 import pymunk
 import pymunk.pygame_util
 import shapely.geometry as sg
