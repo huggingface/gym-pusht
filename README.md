@@ -136,14 +136,7 @@ If you don't have it already, follow the [instructions](https://python-poetry.or
 
 Install the project with dev dependencies:
 ```bash
-poetry install --with dev
-```
-
-### Add dependencies
-
-The equivalent of `pip install some-package` would just be:
-```bash
-poetry add some-package
+poetry install --all-extras
 ```
 
 ### Follow our style
