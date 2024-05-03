@@ -84,7 +84,7 @@ class PushTEnv(gym.Env):
     <TimeLimit<OrderEnforcing<PassiveEnvChecker<PushTEnv<gym_pusht/PushT-v0>>>>>
     ```
 
-    * `obs_type`: (str) The observation type. Can be either `state` or `pixels`. Default is `state`.
+    * `obs_type`: (str) The observation type. Can be either `state`, `pixels` or `pixels_agent_pos`. Default is `state`.
 
     * `block_cog`: (tuple) The center of gravity of the block if different from the center of mass. Default is `None`.
 
