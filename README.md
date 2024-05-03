@@ -84,17 +84,21 @@ The episode terminates when the block is at least 95% in the goal zone.
 <TimeLimit<OrderEnforcing<PassiveEnvChecker<PushTEnv<gym_pusht/PushT-v0>>>>>
 ```
 
-* `obs_type`: (str) The observation type. Can be either `state` or `pixels`. Default is `state`.
+* `obs_type`: (str) The observation type. Can be either `state`, `pixels` or `pixels_agent_pos`. Default is `state`.
 
 * `block_cog`: (tuple) The center of gravity of the block if different from the center of mass. Default is `None`.
 
 * `damping`: (float) The damping factor of the environment if different from 0. Default is `None`.
 
-* `render_action`: (bool) Whether to render the action on the image. Default is `True`.
+* `render_mode`: (str) The rendering mode. Can be either `human` or `rgb_array`. Default is `rgb_array`.
 
-* `render_size`: (int) The size of the rendered image. Default is `96`.
+* `observation_width`: (int) The width of the observed image. Default is `96`.
 
-* `render_mode`: (str) The rendering mode. Can be either `human` or `rgb_array`. Default is `None`.
+* `observation_height`: (int) The height of the observed image. Default is `96`.
+
+* `visualization_width`: (int) The width of the visualized image. Default is `680`.
+
+* `visualization_height`: (int) The height of the visualized image. Default is `680`.
 
 ### Reset Arguments
 
