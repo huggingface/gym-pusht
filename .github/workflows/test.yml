@@ -50,4 +50,4 @@ jobs:
 
       - name: Test with pytest
         run: |
-          pytest tests -v --cov=./gym_aloha --durations=0
+          pytest tests -v --cov=./gym_pusht --durations=0
