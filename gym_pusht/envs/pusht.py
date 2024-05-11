@@ -237,6 +237,7 @@ class PushTEnv(gym.Env):
         observation = self.get_obs()
         info = self._get_info()
         info["is_success"] = is_success
+        info["coverage"] = coverage
 
         truncated = False
         return observation, reward, terminated, truncated, info
