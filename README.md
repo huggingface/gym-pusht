@@ -56,6 +56,9 @@ If `obs_type` is set to `state`, the observation space is a 5-dimensional vector
 environment: [agent_x, agent_y, block_x, block_y, block_angle]. The values are in the range [0, 512] for the agent
 and block positions and [0, 2*pi] for the block angle.
 
+If `obs_type` is set to `keypoints` the observation space is a 16-dimensional vector representing the keypoint
+locations of the T (in [x0, y0, x1, y1, ...] format). The values are in the range [0, 512].
+
 If `obs_type` is set to `pixels`, the observation space is a 96x96 RGB image of the environment.
 
 ### Rewards
@@ -84,7 +87,7 @@ The episode terminates when the block is at least 95% in the goal zone.
 <TimeLimit<OrderEnforcing<PassiveEnvChecker<PushTEnv<gym_pusht/PushT-v0>>>>>
 ```
 
-* `obs_type`: (str) The observation type. Can be either `state`, `pixels` or `pixels_agent_pos`. Default is `state`.
+* `obs_type`: (str) The observation type. Can be either `state`, `kepoints`, `pixels` or `pixels_agent_pos`. Default is `state`.
 
 * `block_cog`: (tuple) The center of gravity of the block if different from the center of mass. Default is `None`.
 
@@ -105,7 +108,7 @@ The episode terminates when the block is at least 95% in the goal zone.
 Passing the option `options["reset_to_state"]` will reset the environment to a specific state.
 
 > [!WARNING]
-> For legacy compatibility, the inner fonctionning has been preserved, and the state set is not the same as the
+> For legacy compatibility, the inner functioning has been preserved, and the state set is not the same as the
 > the one passed in the argument.
 
 ```python

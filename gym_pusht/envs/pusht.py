@@ -56,6 +56,10 @@ class PushTEnv(gym.Env):
     environment: [agent_x, agent_y, block_x, block_y, block_angle]. The values are in the range [0, 512] for the agent
     and block positions and [0, 2*pi] for the block angle.
 
+    If `obs_type` is set to `keypoints` the observation space is a 16-dimensional vector representing the keypoint
+    locations of the T (in [x0, y0, x1, y1, ...] format). The values are in the range [0, 512]. See `get_keypoints` for
+    a diagram showing the location of the keypoint indices.
+
     If `obs_type` is set to `pixels`, the observation space is a 96x96 RGB image of the environment.
 
     ## Rewards
@@ -84,7 +88,8 @@ class PushTEnv(gym.Env):
     <TimeLimit<OrderEnforcing<PassiveEnvChecker<PushTEnv<gym_pusht/PushT-v0>>>>>
     ```
 
-    * `obs_type`: (str) The observation type. Can be either `state`, `pixels` or `pixels_agent_pos`. Default is `state`.
+    * `obs_type`: (str) The observation type. Can be either `state`, `keypoints`, `pixels` or `pixels_agent_pos`.
+      Default is `state`.
 
     * `block_cog`: (tuple) The center of gravity of the block if different from the center of mass. Default is `None`.
 
@@ -179,6 +184,12 @@ class PushTEnv(gym.Env):
             self.observation_space = spaces.Box(
                 low=np.array([0, 0, 0, 0, 0]),
                 high=np.array([512, 512, 512, 512, 2 * np.pi]),
+                dtype=np.float64,
+            )
+        elif self.obs_type == "keypoints":
+            self.observation_space = spaces.Box(
+                low=np.zeros(8),
+                high=np.full((8,), 512),
                 dtype=np.float64,
             )
         elif self.obs_type == "pixels":
@@ -364,6 +375,9 @@ class PushTEnv(gym.Env):
             block_angle = self.block.angle % (2 * np.pi)
             return np.concatenate([agent_position, block_position, [block_angle]], dtype=np.float64)
 
+        if self.obs_type == "keypoints":
+            return self.get_keypoints().flatten()
+
         pixels = self._render()
         if self.obs_type == "pixels":
             return pixels
@@ -429,7 +443,7 @@ class PushTEnv(gym.Env):
     def _set_state(self, state):
         self.agent.position = list(state[:2])
         # Setting angle rotates with respect to center of mass, therefore will modify the geometric position if not
-        # the same as CoM. Therefore should theoritically set the angle first. But for compatibility with legacy data,
+        # the same as CoM. Therefore should theoretically set the angle first. But for compatibility with legacy data,
         # we do the opposite.
         self.block.position = list(state[2:4])
         self.block.angle = state[4]
@@ -454,8 +468,7 @@ class PushTEnv(gym.Env):
         space.add(body, shape)
         return body
 
-    @staticmethod
-    def add_tee(space, position, angle, scale=30, color="LightSlateGray", mask=None):
+    def add_tee(self, space, position, angle, scale=30, color="LightSlateGray", mask=None):
         if mask is None:
             mask = pymunk.ShapeFilter.ALL_MASKS()
         mass = 1
@@ -486,4 +499,27 @@ class PushTEnv(gym.Env):
         body.angle = angle
         body.friction = 1
         space.add(body, shape1, shape2)
+        self._block_shapes = [shape1, shape2]
         return body
+
+    def get_keypoints(self):
+        """Get a (8, 2) numpy array with the T keypoints.
+
+        The T is composed of two rectangles each with 4 keypoints.
+
+        0───────────1
+        │           │
+        3───4───5───2
+            │   │
+            │   │
+            │   │
+            │   │
+            7───6
+        """
+        keypoints = []
+        for shape in self._block_shapes:
+            for v in shape.get_vertices():
+                v = v.rotated(shape.body.angle)
+                v = v + shape.body.position
+                keypoints.append(np.array(v))
+        return np.row_stack(keypoints)
