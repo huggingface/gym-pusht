@@ -430,7 +430,7 @@ class PushTEnv(gym.Env):
 
         # Add agent, block, and goal zone
         self.agent = self.add_circle(self.space, (256, 400), 15)
-        self.block = self.add_tee(self.space, (256, 300), 0)
+        self.block, self._block_shapes = self.add_tee(self.space, (256, 300), 0)
         self.goal_pose = np.array([256, 256, np.pi / 4])  # x, y, theta (in radians)
         if self.block_cog is not None:
             self.block.center_of_gravity = self.block_cog
@@ -468,6 +468,7 @@ class PushTEnv(gym.Env):
         space.add(body, shape)
         return body
 
+    @staticmethod
     def add_tee(self, space, position, angle, scale=30, color="LightSlateGray", mask=None):
         if mask is None:
             mask = pymunk.ShapeFilter.ALL_MASKS()
@@ -499,8 +500,7 @@ class PushTEnv(gym.Env):
         body.angle = angle
         body.friction = 1
         space.add(body, shape1, shape2)
-        self._block_shapes = [shape1, shape2]
-        return body
+        return body, [shape1, shape2]
 
     def get_keypoints(self):
         """Get a (8, 2) numpy array with the T keypoints.
