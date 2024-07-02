@@ -225,7 +225,8 @@ class PushTEnv(gym.Env):
             )
         else:
             raise ValueError(
-                f"Unknown obs_type {self.obs_type}. Must be one of [pixels, state, pixels_agent_pos]"
+                f"Unknown obs_type {self.obs_type}. Must be one of [pixels, state, environment_state_agent_pos, "
+                "pixels_agent_pos]"
             )
 
     def _get_coverage(self):
