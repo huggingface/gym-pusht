@@ -376,7 +376,7 @@ class PushTEnv(gym.Env):
             return np.concatenate([agent_position, block_position, [block_angle]], dtype=np.float64)
 
         if self.obs_type == "keypoints":
-            return self.get_keypoints().flatten()
+            return self.get_keypoints(self._block_shapes).flatten()
 
         pixels = self._render()
         if self.obs_type == "pixels":
@@ -469,7 +469,7 @@ class PushTEnv(gym.Env):
         return body
 
     @staticmethod
-    def add_tee(self, space, position, angle, scale=30, color="LightSlateGray", mask=None):
+    def add_tee(space, position, angle, scale=30, color="LightSlateGray", mask=None):
         if mask is None:
             mask = pymunk.ShapeFilter.ALL_MASKS()
         mass = 1
@@ -502,7 +502,8 @@ class PushTEnv(gym.Env):
         space.add(body, shape1, shape2)
         return body, [shape1, shape2]
 
-    def get_keypoints(self):
+    @staticmethod
+    def get_keypoints(block_shapes):
         """Get a (8, 2) numpy array with the T keypoints.
 
         The T is composed of two rectangles each with 4 keypoints.
@@ -517,7 +518,7 @@ class PushTEnv(gym.Env):
             7───6
         """
         keypoints = []
-        for shape in self._block_shapes:
+        for shape in block_shapes:
             for v in shape.get_vertices():
                 v = v.rotated(shape.body.angle)
                 v = v + shape.body.position
