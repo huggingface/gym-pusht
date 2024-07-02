@@ -188,8 +188,8 @@ class PushTEnv(gym.Env):
             )
         elif self.obs_type == "environment_state":
             self.observation_space = spaces.Box(
-                low=np.zeros(8),
-                high=np.full((8,), 512),
+                low=np.zeros(16),
+                high=np.full((16,), 512),
                 dtype=np.float64,
             )
         elif self.obs_type == "pixels":
