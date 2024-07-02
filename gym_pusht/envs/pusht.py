@@ -56,9 +56,9 @@ class PushTEnv(gym.Env):
     environment: [agent_x, agent_y, block_x, block_y, block_angle]. The values are in the range [0, 512] for the agent
     and block positions and [0, 2*pi] for the block angle.
 
-    If `obs_type` is set to `keypoints` the observation space is a 16-dimensional vector representing the keypoint
-    locations of the T (in [x0, y0, x1, y1, ...] format). The values are in the range [0, 512]. See `get_keypoints` for
-    a diagram showing the location of the keypoint indices.
+    If `obs_type` is set to `environment_state` the observation space is a 16-dimensional vector representing the
+    keypoint locations of the T (in [x0, y0, x1, y1, ...] format). The values are in the range [0, 512]. See
+    `get_keypoints` for a diagram showing the location of the keypoint indices.
 
     If `obs_type` is set to `pixels`, the observation space is a 96x96 RGB image of the environment.
 
@@ -186,7 +186,7 @@ class PushTEnv(gym.Env):
                 high=np.array([512, 512, 512, 512, 2 * np.pi]),
                 dtype=np.float64,
             )
-        elif self.obs_type == "keypoints":
+        elif self.obs_type == "environment_state":
             self.observation_space = spaces.Box(
                 low=np.zeros(8),
                 high=np.full((8,), 512),
@@ -375,7 +375,7 @@ class PushTEnv(gym.Env):
             block_angle = self.block.angle % (2 * np.pi)
             return np.concatenate([agent_position, block_position, [block_angle]], dtype=np.float64)
 
-        if self.obs_type == "keypoints":
+        if self.obs_type == "environment_state":
             return self.get_keypoints(self._block_shapes).flatten()
 
         pixels = self._render()
