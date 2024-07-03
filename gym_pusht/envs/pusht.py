@@ -511,8 +511,8 @@ class PushTEnv(gym.Env):
         shape1.filter = pymunk.ShapeFilter(mask=mask)
         shape2.filter = pymunk.ShapeFilter(mask=mask)
         body.center_of_gravity = (shape1.center_of_gravity + shape2.center_of_gravity) / 2
-        body.position = position
         body.angle = angle
+        body.position = position
         body.friction = 1
         space.add(body, shape1, shape2)
         return body, [shape1, shape2]
