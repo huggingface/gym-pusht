@@ -89,7 +89,7 @@ The episode terminates when the block is at least 95% in the goal zone.
 <TimeLimit<OrderEnforcing<PassiveEnvChecker<PushTEnv<gym_pusht/PushT-v0>>>>>
 ```
 
-* `obs_type`: (str) The observation type. Can be either `state`, `environment_state`, `pixels` or `pixels_agent_pos`. Default is `state`.
+* `obs_type`: (str) The observation type. Can be either `state`, `environment_state_agent_pos`, `pixels` or `pixels_agent_pos`. Default is `state`.
 
 * `block_cog`: (tuple) The center of gravity of the block if different from the center of mass. Default is `None`.
 
