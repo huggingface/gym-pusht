@@ -144,6 +144,7 @@ class PushTEnv(gym.Env):
         observation_height=96,
         visualization_width=680,
         visualization_height=680,
+        randomize_goal=False,
     ):
         super().__init__()
         # Observations
@@ -166,6 +167,13 @@ class PushTEnv(gym.Env):
         self.dt = 0.01
         self.block_cog = block_cog
         self.damping = damping
+
+        # Randomization
+        self.randomize_goal = randomize_goal
+        # Safe margins from walls for positioning objects
+        self.margin = 100  # Margin from walls to avoid spawning too close to edges
+        self.min_pos = np.array([self.margin, self.margin])
+        self.max_pos = np.array([512 - self.margin, 512 - self.margin])
 
         # If human-rendering is used, `self.window` will be a reference
         # to the window that we draw to. `self.clock` will be a clock that is used
@@ -269,6 +277,15 @@ class PushTEnv(gym.Env):
         super().reset(seed=seed)
         self._setup()
 
+        # Randomize goal if enabled
+        if self.randomize_goal:
+            # Randomize goal position and orientation
+            goal_x = self.np_random.uniform(self.min_pos[0], self.max_pos[0])
+            goal_y = self.np_random.uniform(self.min_pos[1], self.max_pos[1])
+            goal_theta = self.np_random.uniform(0, 2 * np.pi)
+            self.goal_pose = np.array([goal_x, goal_y, goal_theta])
+
+        # Handle state reset
         if options is not None and options.get("reset_to_state") is not None:
             state = np.array(options.get("reset_to_state"))
         else:
@@ -276,11 +293,11 @@ class PushTEnv(gym.Env):
             rs = np.random.RandomState(seed=seed)
             state = np.array(
                 [
-                    rs.randint(50, 450),
-                    rs.randint(50, 450),
-                    rs.randint(100, 400),
-                    rs.randint(100, 400),
-                    rs.randn() * 2 * np.pi - np.pi,
+                    self.np_random.uniform(self.min_pos[0], self.max_pos[0]),  # agent_x
+                    self.np_random.uniform(self.min_pos[1], self.max_pos[1]),  # agent_y
+                    self.np_random.uniform(self.min_pos[0], self.max_pos[0]),  # block_x
+                    self.np_random.uniform(self.min_pos[1], self.max_pos[1]),  # block_y
+                    self.np_random.uniform(0, 2 * np.pi),  # block_angle
                 ],
                 # dtype=np.float64
             )
@@ -446,6 +463,7 @@ class PushTEnv(gym.Env):
         # Add agent, block, and goal zone
         self.agent = self.add_circle(self.space, (256, 400), 15)
         self.block, self._block_shapes = self.add_tee(self.space, (256, 300), 0)
+        # Default goal pose that will be used if randomization is disabled
         self.goal_pose = np.array([256, 256, np.pi / 4])  # x, y, theta (in radians)
         if self.block_cog is not None:
             self.block.center_of_gravity = self.block_cog
