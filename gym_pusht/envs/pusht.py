@@ -54,8 +54,7 @@ class PushTEnv(gym.Env):
 
     If `obs_type` is set to `state`, the observation space is a 5-dimensional vector representing the state of the
     environment: [agent_x, agent_y, block_x, block_y, block_angle]. The values are in the range [0, 512] for the agent
-    and block positions and [0, 2*pi] for the block angle. When `randomize_goal=True`, the observation becomes
-    8-dimensional with additional [goal_x, goal_y, goal_theta] values.
+    and block positions and [0, 2*pi] for the block angle. When `randomize_goal=True`, the observation is extended by [goal_x, goal_y, goal_theta] to become 8-dimensional.
 
     If `obs_type` is set to `environment_state_agent_pos` the observation space is a dictionary with:
     - `environment_state`: 16-dimensional vector representing the keypoint locations of the T (in [x0, y0, x1, y1, ...]
