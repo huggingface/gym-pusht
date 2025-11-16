@@ -309,17 +309,15 @@ class PushTEnv(gym.Env):
         if options is not None and options.get("reset_to_state") is not None:
             state = np.array(options.get("reset_to_state"))
         else:
-            # state = self.np_random.uniform(low=[50, 50, 100, 100, -np.pi], high=[450, 450, 400, 400, np.pi])
-            rs = np.random.RandomState(seed=seed)
+            # we use the env's RNG instead of global np.random
             state = np.array(
                 [
-                    self.np_random.uniform(self.min_pos[0], self.max_pos[0]),  # agent_x
-                    self.np_random.uniform(self.min_pos[1], self.max_pos[1]),  # agent_y
-                    self.np_random.uniform(self.min_pos[0], self.max_pos[0]),  # block_x
-                    self.np_random.uniform(self.min_pos[1], self.max_pos[1]),  # block_y
-                    self.np_random.uniform(0, 2 * np.pi),  # block_angle
-                ],
-                # dtype=np.float64
+                    self.np_random.integers(50, 450),       # agent_x
+                    self.np_random.integers(50, 450),       # agent_y
+                    self.np_random.integers(100, 400),      # block_x
+                    self.np_random.integers(100, 400),      # block_y
+                    self.np_random.uniform(-np.pi, np.pi),  # block_angle
+                ]
             )
         self._set_state(state)
 

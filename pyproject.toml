@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gym-pusht"
-version = "0.1.5"
+version = "0.1.6"
 description = "A gymnasium environment for PushT."
 authors = [
     "Rémi Cadène <re.cadene@gmail.com>",
