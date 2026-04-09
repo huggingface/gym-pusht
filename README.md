@@ -127,6 +127,12 @@ array([ 0.      , 10.      , 57.866196, 50.686398,  1.      ],
 ## Version History
 
 * v0: Original version
+* v0.1.6: Added compatibility with pymunk 7.x
+
+## Compatibility Notes
+
+* Compatible with pymunk versions 6.6.0 and higher, including pymunk 7.x
+* If you encounter any issues with pymunk 7.x, please report them on our GitHub issue tracker
 
 
 ## References
