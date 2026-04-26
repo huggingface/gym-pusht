@@ -24,7 +24,7 @@ packages = [{include = "gym_pusht"}]
 python = "^3.10"
 gymnasium = ">=0.29.1"
 opencv-python = ">=4.9.0"
-pygame = ">=2.5.2"
+pygame-ce = ">=2.5.2"
 pymunk = ">=6.6.0"
 shapely = ">=2.0.3"
 scikit-image = ">=0.22.0"
