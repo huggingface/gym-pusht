@@ -70,7 +70,7 @@ class PushTEnv(gym.Env):
 
     ## Success Criteria
 
-    The environment is considered solved if the block is at least 95% in the goal zone.
+    By default, the environment is considered solved if the block is at least 95% in the goal zone. The percent can be configured via `success_threshold` parameter.
 
     ## Starting State
 
@@ -78,7 +78,7 @@ class PushTEnv(gym.Env):
 
     ## Episode Termination
 
-    The episode terminates when the block is at least 95% in the goal zone.
+    The episode terminates when the success criteria is met.
 
     ## Arguments
 
@@ -104,6 +104,8 @@ class PushTEnv(gym.Env):
     * `visualization_width`: (int) The width of the visualized image. Default is `680`.
 
     * `visualization_height`: (int) The height of the visualized image. Default is `680`.
+
+    * `success_threshold`: (float) The percentage of block in goal zone required for environment to be considered solved. Default is `0.95`.
 
     ## Reset Arguments
 
@@ -144,6 +146,7 @@ class PushTEnv(gym.Env):
         observation_height=96,
         visualization_width=680,
         visualization_height=680,
+        success_threshold=0.95,
     ):
         super().__init__()
         # Observations
@@ -178,7 +181,7 @@ class PushTEnv(gym.Env):
         self.teleop = None
         self._last_action = None
 
-        self.success_threshold = 0.95  # 95% coverage
+        self.success_threshold = success_threshold
 
     def _initialize_observation_space(self):
         if self.obs_type == "state":
