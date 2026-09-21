@@ -500,7 +500,7 @@ class PushTEnv(gym.Env):
             (scale / 2, length * scale),
             (scale / 2, scale),
         ]
-        inertia2 = pymunk.moment_for_poly(mass, vertices=vertices1)
+        inertia2 = pymunk.moment_for_poly(mass, vertices=vertices2)
         body = pymunk.Body(mass, inertia1 + inertia2)
         shape1 = pymunk.Poly(body, vertices1)
         shape2 = pymunk.Poly(body, vertices2)
