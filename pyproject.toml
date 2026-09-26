@@ -25,7 +25,7 @@ python = "^3.10"
 gymnasium = ">=0.29.1"
 opencv-python = ">=4.9.0"
 pygame = ">=2.5.2"
-pymunk = ">=6.6.0"
+pymunk = ">=6.6.0"  # Compatible with pymunk 7.x
 shapely = ">=2.0.3"
 scikit-image = ">=0.22.0"
 pre-commit = {version = ">=3.7.0", optional = true}

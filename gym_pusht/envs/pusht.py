@@ -448,9 +448,8 @@ class PushTEnv(gym.Env):
         if self.block_cog is not None:
             self.block.center_of_gravity = self.block_cog
 
-        # Add collision handling
-        self.collision_handeler = self.space.add_collision_handler(0, 0)
-        self.collision_handeler.post_solve = self._handle_collision
+        # Add collision handling (compatible with pymunk 7+)
+        self.space.on_collision(0, 0, post_solve=self._handle_collision)
         self.n_contact_points = 0
 
     def _set_state(self, state):
