@@ -418,7 +418,7 @@ class PushTEnv(gym.Env):
             "pos_agent": np.array(self.agent.position),
             "vel_agent": np.array(self.agent.velocity),
             "block_pose": np.array(list(self.block.position) + [self.block.angle]),
-            "goal_pose": self.goal_pose,
+            "goal_pose": np.array(self.goal_pose),
             "n_contacts": n_contact_points_per_step,
         }
         return info
@@ -536,4 +536,4 @@ class PushTEnv(gym.Env):
                 v = v.rotated(shape.body.angle)
                 v = v + shape.body.position
                 keypoints.append(np.array(v))
-        return np.row_stack(keypoints)
+        return np.vstack(keypoints)
