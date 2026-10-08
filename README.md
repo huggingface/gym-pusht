@@ -69,7 +69,7 @@ The reward is the coverage of the block in the goal zone. The reward is 1.0 if t
 
 ### Success Criteria
 
-The environment is considered solved if the block is at least 95% in the goal zone.
+By default, the environment is considered solved if the block is at least 95% in the goal zone. The percent can be configured via `success_threshold` parameter.
 
 ### Starting State
 
@@ -77,7 +77,7 @@ The agent starts at a random position and the block starts at a random position 
 
 ### Episode Termination
 
-The episode terminates when the block is at least 95% in the goal zone.
+The episode terminates when the success criteria is met.
 
 ### Arguments
 
