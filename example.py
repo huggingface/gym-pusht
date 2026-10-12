@@ -1,7 +1,7 @@
 import gymnasium as gym
 import gym_pusht
 
-env = gym.make("gym_pusht/PushT-v0", render_mode="human")
+env = gym.make("gym_pusht/PushT-v1", render_mode="human")
 observation, info = env.reset()
 
 for _ in range(1000):
